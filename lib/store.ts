@@ -1,17 +1,27 @@
+export interface TaskApplicant {
+  userId: string
+  message: string
+  appliedAt: Date
+}
+
 export interface Task {
   id: string
   title: string
   description: string
   money: number
+  bonusMin?: number
+  bonusMax?: number
   time: string
   urgency: "immediate" | "feasible"
   type: "online" | "offline"
+  verification: "1-step" | "2-step"
   skills: string[]
   postedBy: string
   postedAt: Date
   status: "open" | "in-progress" | "completed"
   assignedTo?: string
   location?: string
+  applicants?: TaskApplicant[]
 }
 
 export interface UserProfile {
@@ -108,13 +118,19 @@ export const sampleTasks: Task[] = [
     title: "Edit my YouTube vlog (5 min video)",
     description: "Need someone to edit a 5-minute campus vlog. Add transitions, background music, and subtitles. I'll share the raw footage via Google Drive.",
     money: 350,
+    bonusMin: 50,
+    bonusMax: 150,
     time: "2 days",
     urgency: "feasible",
     type: "online",
+    verification: "2-step",
     skills: ["editor"],
     postedBy: "u2",
     postedAt: new Date(Date.now() - 3600000),
     status: "open",
+    applicants: [
+      { userId: "u3", message: "I have experience with campus vlogs and can deliver in 1 day!", appliedAt: new Date(Date.now() - 1800000) },
+    ],
   },
   {
     id: "t2",
@@ -124,6 +140,7 @@ export const sampleTasks: Task[] = [
     time: "30 min",
     urgency: "immediate",
     type: "offline",
+    verification: "1-step",
     skills: ["runner"],
     postedBy: "u3",
     postedAt: new Date(Date.now() - 1800000),
@@ -135,13 +152,17 @@ export const sampleTasks: Task[] = [
     title: "Create PPT for Data Structures seminar",
     description: "Need a 15-slide PPT on Graphs & Trees. Should include diagrams, examples, and clean design. Reference material will be provided.",
     money: 200,
+    bonusMin: 30,
+    bonusMax: 100,
     time: "1 day",
     urgency: "feasible",
     type: "online",
+    verification: "2-step",
     skills: ["presenter", "coder"],
     postedBy: "u4",
     postedAt: new Date(Date.now() - 7200000),
     status: "open",
+    applicants: [],
   },
   {
     id: "t4",
@@ -151,6 +172,7 @@ export const sampleTasks: Task[] = [
     time: "20 min",
     urgency: "immediate",
     type: "offline",
+    verification: "1-step",
     skills: ["runner"],
     postedBy: "u2",
     postedAt: new Date(Date.now() - 900000),
@@ -162,39 +184,54 @@ export const sampleTasks: Task[] = [
     title: "Draw a portrait from my photo",
     description: "Need a pencil sketch portrait from a reference photo. Digital or physical both work. Decent quality expected.",
     money: 500,
+    bonusMin: 50,
+    bonusMax: 200,
     time: "3 days",
     urgency: "feasible",
     type: "online",
+    verification: "2-step",
     skills: ["artist"],
     postedBy: "u3",
     postedAt: new Date(Date.now() - 14400000),
     status: "open",
+    applicants: [
+      { userId: "u1", message: "I'm a portrait artist with 2 years experience. Check my portfolio!", appliedAt: new Date(Date.now() - 7200000) },
+      { userId: "u4", message: "I can do digital portraits. Fast delivery guaranteed.", appliedAt: new Date(Date.now() - 3600000) },
+    ],
   },
   {
     id: "t6",
     title: "Write lab record for Physics practical",
     description: "Need 5 experiments written neatly in lab record format. Observations and diagrams included. Can share the data.",
     money: 150,
+    bonusMin: 20,
+    bonusMax: 50,
     time: "1 day",
     urgency: "feasible",
     type: "offline",
+    verification: "2-step",
     skills: ["writer"],
     postedBy: "u4",
     postedAt: new Date(Date.now() - 10800000),
     status: "open",
+    applicants: [],
   },
   {
     id: "t7",
     title: "Debug my React project",
     description: "My e-commerce project has 3 bugs - cart not updating, search not filtering, and checkout form validation failing. Need help ASAP.",
     money: 300,
+    bonusMin: 50,
+    bonusMax: 100,
     time: "2 hours",
     urgency: "immediate",
     type: "online",
+    verification: "2-step",
     skills: ["coder"],
     postedBy: "u2",
     postedAt: new Date(Date.now() - 2700000),
     status: "open",
+    applicants: [],
   },
   {
     id: "t8",
@@ -204,6 +241,7 @@ export const sampleTasks: Task[] = [
     time: "15 min",
     urgency: "immediate",
     type: "offline",
+    verification: "1-step",
     skills: ["runner"],
     postedBy: "u3",
     postedAt: new Date(Date.now() - 600000),
@@ -221,6 +259,7 @@ export const completedTasks: Task[] = [
     time: "1 day",
     urgency: "feasible",
     type: "online",
+    verification: "2-step",
     skills: ["artist"],
     postedBy: "u4",
     postedAt: new Date(Date.now() - 86400000 * 3),
@@ -235,6 +274,7 @@ export const completedTasks: Task[] = [
     time: "30 min",
     urgency: "immediate",
     type: "offline",
+    verification: "1-step",
     skills: ["runner"],
     postedBy: "u2",
     postedAt: new Date(Date.now() - 86400000 * 5),

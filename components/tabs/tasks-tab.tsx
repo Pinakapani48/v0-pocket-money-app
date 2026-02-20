@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import { sampleTasks, sampleUsers } from "@/lib/store"
+import type { Task } from "@/lib/store"
 import {
   Wifi,
   MapPin,
@@ -12,6 +13,14 @@ import {
   Globe,
   Footprints,
   ArrowRight,
+  Unlock,
+  Lock,
+  ShieldCheck,
+  CheckCircle2,
+  Star,
+  Plus,
+  User,
+  Send,
 } from "lucide-react"
 
 function formatTimeAgo(date: Date): string {
@@ -23,13 +32,42 @@ function formatTimeAgo(date: Date): string {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-function TaskCard({ task }: { task: typeof sampleTasks[0] }) {
+function TaskCard({ task }: { task: Task }) {
   const poster = sampleUsers.find((u) => u.id === task.postedBy)
   const [expanded, setExpanded] = useState(false)
+  const [accepted, setAccepted] = useState(false)
+  const [interested, setInterested] = useState(false)
+  const [interestMessage, setInterestMessage] = useState("")
+  const [showInterestForm, setShowInterestForm] = useState(false)
+
+  const is1Step = task.verification === "1-step"
+
+  const handleDirectAccept = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setAccepted(true)
+  }
+
+  const handleExpressInterest = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!showInterestForm) {
+      setShowInterestForm(true)
+      return
+    }
+    if (interestMessage.trim()) {
+      setInterested(true)
+      setShowInterestForm(false)
+    }
+  }
 
   return (
     <div
-      className="rounded-xl border border-border p-4 transition-all duration-300 hover:border-neon-cyan/20 glass-card cursor-pointer"
+      className={`rounded-xl border p-4 transition-all duration-300 glass-card cursor-pointer ${
+        accepted
+          ? "border-neon-green/40"
+          : interested
+          ? "border-neon-orange/40"
+          : "border-border hover:border-neon-cyan/20"
+      }`}
       onClick={() => setExpanded(!expanded)}
       role="button"
       tabIndex={0}
@@ -53,6 +91,17 @@ function TaskCard({ task }: { task: typeof sampleTasks[0] }) {
             >
               {task.type}
             </span>
+            {/* Verification badge */}
+            <span
+              className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+              style={{
+                background: is1Step ? "rgba(57,255,20,0.12)" : "rgba(255,170,0,0.12)",
+                color: is1Step ? "#39ff14" : "#ffaa00",
+              }}
+            >
+              {is1Step ? <Unlock className="h-2.5 w-2.5" /> : <Lock className="h-2.5 w-2.5" />}
+              {is1Step ? "1-STEP" : "2-STEP"}
+            </span>
             {task.skills.map((s) => (
               <span key={s} className="rounded-full px-1.5 py-0.5 text-[9px] font-medium capitalize" style={{ background: "rgba(191,95,255,0.1)", color: "#bf5fff" }}>
                 {s}
@@ -68,6 +117,11 @@ function TaskCard({ task }: { task: typeof sampleTasks[0] }) {
           <span className="flex items-center text-base font-bold text-neon-green">
             <IndianRupee className="h-3.5 w-3.5" />{task.money}
           </span>
+          {task.bonusMin !== undefined && task.bonusMax !== undefined && (
+            <span className="flex items-center gap-0.5 text-[9px] font-medium text-neon-orange">
+              <Plus className="h-2 w-2" />{task.bonusMin}-{task.bonusMax} bonus
+            </span>
+          )}
           <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
             <Clock className="h-2.5 w-2.5" /> {task.time}
           </span>
@@ -82,16 +136,116 @@ function TaskCard({ task }: { task: typeof sampleTasks[0] }) {
               <MapPin className="h-3 w-3" /> {task.location}
             </p>
           )}
-          <button
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold text-primary-foreground transition-all"
-            style={{ background: "linear-gradient(135deg, #00f0ff, #39ff14)" }}
-            onClick={(e) => {
-              e.stopPropagation()
-              // Accept task action
+
+          {/* Verification explanation */}
+          <div
+            className="mt-3 flex items-start gap-2 rounded-lg border px-3 py-2"
+            style={{
+              borderColor: is1Step ? "rgba(57,255,20,0.15)" : "rgba(255,170,0,0.15)",
+              background: is1Step ? "rgba(57,255,20,0.04)" : "rgba(255,170,0,0.04)",
             }}
           >
-            Accept Task <ArrowRight className="h-3.5 w-3.5" />
-          </button>
+            <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0" style={{ color: is1Step ? "#39ff14" : "#ffaa00" }} />
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              {is1Step
+                ? "1-Step: Accept now and the task is yours instantly. No review needed."
+                : `2-Step: Express interest with a message. The poster will review your profile and decide. ${
+                    task.bonusMin !== undefined ? `Base pay: ${task.money} + ${task.bonusMin}-${task.bonusMax} performance bonus.` : ""
+                  }`}
+            </p>
+          </div>
+
+          {/* 2-step applicants count */}
+          {!is1Step && task.applicants && task.applicants.length > 0 && (
+            <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <User className="h-3 w-3" />
+              {task.applicants.length} {task.applicants.length === 1 ? "student" : "students"} already interested
+            </div>
+          )}
+
+          {/* Action buttons */}
+          {accepted ? (
+            <div
+              className="mt-3 flex items-center justify-center gap-2 rounded-lg border py-2.5 text-xs font-bold"
+              style={{
+                borderColor: "rgba(57,255,20,0.3)",
+                background: "rgba(57,255,20,0.08)",
+                color: "#39ff14",
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Task Locked! It{"'"}s yours now.
+            </div>
+          ) : interested ? (
+            <div
+              className="mt-3 flex items-center justify-center gap-2 rounded-lg border py-2.5 text-xs font-bold"
+              style={{
+                borderColor: "rgba(255,170,0,0.3)",
+                background: "rgba(255,170,0,0.08)",
+                color: "#ffaa00",
+              }}
+            >
+              <Clock className="h-4 w-4" />
+              Interest sent! Waiting for review...
+            </div>
+          ) : is1Step ? (
+            <button
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold text-primary-foreground transition-all"
+              style={{ background: "linear-gradient(135deg, #39ff14, #00f0ff)", boxShadow: "0 0 15px rgba(57,255,20,0.2)" }}
+              onClick={handleDirectAccept}
+            >
+              <Unlock className="h-3.5 w-3.5" />
+              Accept Task Instantly
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <div className="mt-3 flex flex-col gap-2">
+              {showInterestForm && (
+                <div className="animate-slide-up" onClick={(e) => e.stopPropagation()}>
+                  <textarea
+                    value={interestMessage}
+                    onChange={(e) => setInterestMessage(e.target.value)}
+                    placeholder="Tell the poster why you're a good fit... (mention your skills, experience, or past work)"
+                    rows={3}
+                    className="w-full resize-none rounded-lg border border-neon-orange/20 bg-secondary px-3 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-neon-orange/50 focus:outline-none"
+                    autoFocus
+                  />
+                </div>
+              )}
+              <button
+                className="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold text-primary-foreground transition-all"
+                style={{
+                  background: showInterestForm && !interestMessage.trim()
+                    ? "rgba(255,170,0,0.3)"
+                    : "linear-gradient(135deg, #ffaa00, #ff3366)",
+                  boxShadow: showInterestForm && !interestMessage.trim() ? "none" : "0 0 15px rgba(255,170,0,0.2)",
+                }}
+                onClick={handleExpressInterest}
+                disabled={showInterestForm && !interestMessage.trim()}
+              >
+                {showInterestForm ? (
+                  <>
+                    <Send className="h-3.5 w-3.5" />
+                    Send Interest
+                  </>
+                ) : (
+                  <>
+                    <Lock className="h-3.5 w-3.5" />
+                    Express Interest
+                    <Star className="h-3.5 w-3.5" />
+                  </>
+                )}
+              </button>
+              {showInterestForm && (
+                <button
+                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setShowInterestForm(false); setInterestMessage("") }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -166,6 +320,19 @@ export function TasksTab() {
               Enter <ChevronRight className="h-3 w-3" />
             </div>
           </button>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 rounded-xl border border-border px-4 py-2.5" style={{ background: "rgba(18,18,28,0.5)" }}>
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <Unlock className="h-3 w-3 text-neon-green" />
+            1-Step: Instant
+          </div>
+          <div className="h-3 w-px bg-border" />
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <Lock className="h-3 w-3 text-neon-orange" />
+            2-Step: Review
+          </div>
         </div>
       </div>
     )
