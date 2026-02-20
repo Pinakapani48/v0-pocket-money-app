@@ -21,6 +21,8 @@ import {
   Plus,
   User,
   Send,
+  UserX,
+  UserCheck,
 } from "lucide-react"
 
 function formatTimeAgo(date: Date): string {
@@ -32,7 +34,7 @@ function formatTimeAgo(date: Date): string {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({ task, assignedMap }: { task: Task; assignedMap: Record<string, string> }) {
   const poster = sampleUsers.find((u) => u.id === task.postedBy)
   const [expanded, setExpanded] = useState(false)
   const [accepted, setAccepted] = useState(false)
@@ -41,6 +43,9 @@ function TaskCard({ task }: { task: Task }) {
   const [showInterestForm, setShowInterestForm] = useState(false)
 
   const is1Step = task.verification === "1-step"
+  const isAssignedToOther = assignedMap[task.id] && assignedMap[task.id] !== "u1"
+  const isAssignedToMe = assignedMap[task.id] === "u1"
+  const assignedUser = isAssignedToOther ? sampleUsers.find((u) => u.id === assignedMap[task.id]) : null
 
   const handleDirectAccept = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -62,18 +67,70 @@ function TaskCard({ task }: { task: Task }) {
   return (
     <div
       className={`rounded-xl border p-4 transition-all duration-300 glass-card cursor-pointer ${
-        accepted
+        isAssignedToOther
+          ? "border-border/50 opacity-60"
+          : isAssignedToMe
+          ? "border-neon-green/40"
+          : accepted
           ? "border-neon-green/40"
           : interested
           ? "border-neon-orange/40"
           : "border-border hover:border-neon-cyan/20"
       }`}
-      onClick={() => setExpanded(!expanded)}
+      onClick={() => !isAssignedToOther && setExpanded(!expanded)}
       role="button"
       tabIndex={0}
       aria-expanded={expanded}
-      onKeyDown={(e) => { if (e.key === "Enter") setExpanded(!expanded) }}
+      onKeyDown={(e) => { if (e.key === "Enter" && !isAssignedToOther) setExpanded(!expanded) }}
     >
+      {/* Task Taken banner for 2-step tasks assigned to someone else */}
+      {isAssignedToOther && (
+        <div
+          className="mb-3 flex items-center gap-2.5 rounded-lg border px-3 py-2.5"
+          style={{
+            borderColor: "rgba(255,170,0,0.2)",
+            background: "rgba(255,170,0,0.05)",
+          }}
+        >
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+            style={{ background: "rgba(255,170,0,0.15)" }}
+          >
+            <UserX className="h-4 w-4 text-neon-orange" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold text-neon-orange">Task Taken</p>
+            <p className="text-[10px] text-muted-foreground">
+              Assigned to {assignedUser?.name || "another student"}. Better luck next time!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Assigned to you banner */}
+      {isAssignedToMe && (
+        <div
+          className="mb-3 flex items-center gap-2.5 rounded-lg border px-3 py-2.5"
+          style={{
+            borderColor: "rgba(57,255,20,0.2)",
+            background: "rgba(57,255,20,0.05)",
+          }}
+        >
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+            style={{ background: "rgba(57,255,20,0.15)" }}
+          >
+            <UserCheck className="h-4 w-4 text-neon-green" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold text-neon-green">Assigned to you!</p>
+            <p className="text-[10px] text-muted-foreground">
+              The poster chose you for this task. Check My Tasks to get started.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -164,7 +221,31 @@ function TaskCard({ task }: { task: Task }) {
           )}
 
           {/* Action buttons */}
-          {accepted ? (
+          {isAssignedToOther ? (
+            <div
+              className="mt-3 flex items-center justify-center gap-2 rounded-lg border py-2.5 text-xs font-bold"
+              style={{
+                borderColor: "rgba(255,170,0,0.2)",
+                background: "rgba(255,170,0,0.06)",
+                color: "#ffaa00",
+              }}
+            >
+              <UserX className="h-4 w-4" />
+              Task assigned to {assignedUser?.name || "someone else"}
+            </div>
+          ) : isAssignedToMe ? (
+            <div
+              className="mt-3 flex items-center justify-center gap-2 rounded-lg border py-2.5 text-xs font-bold"
+              style={{
+                borderColor: "rgba(57,255,20,0.3)",
+                background: "rgba(57,255,20,0.08)",
+                color: "#39ff14",
+              }}
+            >
+              <UserCheck className="h-4 w-4" />
+              You got this task! Go to My Tasks.
+            </div>
+          ) : accepted ? (
             <div
               className="mt-3 flex items-center justify-center gap-2 rounded-lg border py-2.5 text-xs font-bold"
               style={{
@@ -256,6 +337,8 @@ export function TasksTab() {
   const [mode, setMode] = useState<"online" | "offline" | null>(null)
   const [filter, setFilter] = useState<"all" | "immediate" | "feasible">("all")
   const containerRef = useRef<HTMLDivElement>(null)
+  // Tracks which tasks are assigned and to whom (synced across the app in a real implementation)
+  const [assignedMap] = useState<Record<string, string>>({})
 
   // Mode selection screen
   if (mode === null) {
@@ -411,7 +494,7 @@ export function TasksTab() {
             <p className="text-sm text-muted-foreground">No tasks found</p>
           </div>
         ) : (
-          filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)
+          filteredTasks.map((task) => <TaskCard key={task.id} task={task} assignedMap={assignedMap} />)
         )}
       </div>
     </div>

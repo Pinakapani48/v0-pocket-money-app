@@ -29,6 +29,8 @@ import {
   XCircle,
   Plus,
   FileText,
+  Bell,
+  UserX,
 } from "lucide-react"
 
 function formatTimeAgo(date: Date): string {
@@ -352,8 +354,36 @@ export function MyTasksTab() {
   )
   const userCompletedTasks = completedTasks
 
+  const [assignNotification, setAssignNotification] = useState<{
+    taskTitle: string
+    assignedTo: string
+    rejectedNames: string[]
+  } | null>(null)
+
   const handleAssign = (taskId: string, userId: string) => {
     setAssignedMap((prev) => ({ ...prev, [taskId]: userId }))
+
+    // Find the task and calculate who gets notified
+    const task = [...sampleTasks, ...completedTasks].find((t) => t.id === taskId)
+    if (task) {
+      const assignedUser = sampleUsers.find((u) => u.id === userId)
+      const rejectedApplicants = (task.applicants || [])
+        .filter((a) => a.userId !== userId)
+        .map((a) => {
+          const u = sampleUsers.find((su) => su.id === a.userId)
+          return u?.name || "Unknown"
+        })
+
+      setAssignNotification({
+        taskTitle: task.title,
+        assignedTo: assignedUser?.name || "Unknown",
+        rejectedNames: rejectedApplicants,
+      })
+
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => setAssignNotification(null), 5000)
+    }
+
     setReviewTask(null)
   }
 
@@ -372,11 +402,69 @@ export function MyTasksTab() {
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-24">
-      <div>
-        <h1 className="text-lg font-bold text-foreground">My Tasks</h1>
-        <p className="text-xs text-muted-foreground">Track, review, and manage your work</p>
+  <div className="flex flex-col gap-5 pb-24">
+  {/* Assignment notification toast */}
+  {assignNotification && (
+    <div
+      className="animate-slide-up rounded-xl border p-4"
+      style={{
+        borderColor: "rgba(57,255,20,0.3)",
+        background: "rgba(57,255,20,0.05)",
+        boxShadow: "0 0 25px rgba(57,255,20,0.1)",
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+          style={{ background: "rgba(57,255,20,0.15)" }}
+        >
+          <UserCheck className="h-5 w-5 text-neon-green" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-xs font-bold text-neon-green">Task Assigned!</h3>
+          <p className="mt-0.5 text-[11px] text-foreground">
+            &quot;{assignNotification.taskTitle}&quot; assigned to{" "}
+            <span className="font-semibold text-neon-cyan">{assignNotification.assignedTo}</span>
+          </p>
+          {assignNotification.rejectedNames.length > 0 && (
+            <div className="mt-2 rounded-lg border border-neon-orange/15 px-3 py-2" style={{ background: "rgba(255,170,0,0.04)" }}>
+              <div className="flex items-center gap-1.5 text-[10px] text-neon-orange">
+                <Bell className="h-3 w-3" />
+                <span className="font-semibold">Notifications sent to other applicants:</span>
+              </div>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {assignNotification.rejectedNames.map((name) => (
+                  <span
+                    key={name}
+                    className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style={{ background: "rgba(255,170,0,0.1)", color: "#ffaa00" }}
+                  >
+                    <UserX className="h-2.5 w-2.5" />
+                    {name}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[9px] text-muted-foreground">
+                They will see this task as &quot;Taken&quot; and receive a notification that it was assigned to someone else.
+              </p>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => setAssignNotification(null)}
+          className="shrink-0 text-muted-foreground hover:text-foreground"
+          aria-label="Dismiss notification"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
+    </div>
+  )}
+
+  <div>
+  <h1 className="text-lg font-bold text-foreground">My Tasks</h1>
+  <p className="text-xs text-muted-foreground">Track, review, and manage your work</p>
+  </div>
 
       {/* Tab switcher - now 3 tabs */}
       <div className="flex rounded-xl border border-border overflow-hidden" style={{ background: "rgba(18,18,28,0.5)" }}>
@@ -489,19 +577,36 @@ export function MyTasksTab() {
                     </span>
                   </div>
 
-                  {isAssigned ? (
-                    <div
-                      className="mt-3 flex items-center justify-center gap-2 rounded-lg border py-2.5 text-xs font-bold"
-                      style={{
+  {isAssigned ? (<>
+  <div
+  className="mt-3 flex items-center justify-center gap-2 rounded-lg border py-2.5 text-xs font-bold"
+  style={{
                         borderColor: "rgba(57,255,20,0.3)",
                         background: "rgba(57,255,20,0.08)",
                         color: "#39ff14",
                       }}
                     >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Assigned to {assignedUser?.name}
-                    </div>
-                  ) : (
+  <CheckCircle2 className="h-4 w-4" />
+  Assigned to {assignedUser?.name}
+  </div>
+  {/* Show who was notified */}
+  {(() => {
+    const rejected = (task.applicants || []).filter((a) => a.userId !== isAssigned)
+    if (rejected.length === 0) return null
+    return (
+      <div className="mt-2 flex items-center gap-2 rounded-lg border border-border px-3 py-2" style={{ background: "rgba(18,18,28,0.3)" }}>
+        <Bell className="h-3 w-3 shrink-0 text-neon-orange" />
+        <p className="text-[9px] text-muted-foreground">
+          {rejected.map((a) => {
+            const u = sampleUsers.find((su) => su.id === a.userId)
+            return u?.name
+          }).filter(Boolean).join(", ")}{" "}
+          {rejected.length === 1 ? "was" : "were"} notified this task is taken
+        </p>
+      </div>
+    )
+  })()}
+  </>) : (
                     <button
                       onClick={() => setReviewTask(task)}
                       className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold text-primary-foreground transition-all"

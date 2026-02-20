@@ -47,6 +47,17 @@ export interface Transaction {
   taskId: string
 }
 
+export interface Notification {
+  id: string
+  type: "task-assigned-to-you" | "task-assigned-to-other" | "new-applicant" | "interest-received"
+  taskId: string
+  taskTitle: string
+  fromUserId?: string
+  assignedToUserId?: string
+  read: boolean
+  createdAt: Date
+}
+
 export interface ChatMessage {
   id: string
   taskId: string
@@ -310,7 +321,37 @@ export const skillPortfolio: Record<string, { title: string; description: string
     { title: "Weather App", description: "Built a weather app using OpenWeather API", date: new Date(Date.now() - 86400000 * 20) },
   ],
   artist: [
-    { title: "College Fest Poster", description: "Digital poster design for annual fest", date: new Date(Date.now() - 86400000 * 5) },
-    { title: "Portrait Collection", description: "Series of pencil sketch portraits", date: new Date(Date.now() - 86400000 * 15) },
+  { title: "College Fest Poster", description: "Digital poster design for annual fest", date: new Date(Date.now() - 86400000 * 5) },
+  { title: "Portrait Collection", description: "Series of pencil sketch portraits", date: new Date(Date.now() - 86400000 * 15) },
   ],
-}
+  }
+
+export const sampleNotifications: Notification[] = [
+  {
+    id: "n1",
+    type: "task-assigned-to-other",
+    taskId: "prev1",
+    taskTitle: "Design a logo for my startup",
+    assignedToUserId: "u2",
+    read: false,
+    createdAt: new Date(Date.now() - 3600000 * 2),
+  },
+  {
+    id: "n2",
+    type: "task-assigned-to-you",
+    taskId: "prev2",
+    taskTitle: "Edit campus tour video",
+    fromUserId: "u3",
+    read: true,
+    createdAt: new Date(Date.now() - 86400000),
+  },
+  {
+    id: "n3",
+    type: "interest-received",
+    taskId: "t1",
+    taskTitle: "Edit my YouTube vlog (5 min video)",
+    fromUserId: "u3",
+    read: false,
+    createdAt: new Date(Date.now() - 1800000),
+  },
+]
