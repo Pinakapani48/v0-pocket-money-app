@@ -4,6 +4,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v
 
 THIS IS THE OUTPUT 
 v0-pocket-money-app.vercel.app
+v0-pocket-money-app.vercel.app
 
 ## Built with v0
 
